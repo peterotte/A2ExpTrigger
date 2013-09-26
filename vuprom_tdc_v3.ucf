@@ -734,7 +734,9 @@ NET "trigger_1/DebugSignals*" TIG;
 #For OsziCh End
 
 #For Scalers start
-NET "scaler_1/int_scal_in*" TIG;
+#NET "scaler_SC/int_scal_in*" TIG;
+NET "scal_in_SC*" TIG;
+NET "scal_in*" TIG;
 #For Scalers End
 
 #For Multiplicity 

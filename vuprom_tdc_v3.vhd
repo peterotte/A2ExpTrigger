@@ -77,6 +77,7 @@ end vuprom_CBMaster;
 
 
 architecture rtl of vuprom_CBMaster is
+	attribute keep : string;
 
 	--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
 	--     VME access 
@@ -116,6 +117,7 @@ architecture rtl of vuprom_CBMaster is
 	----- address sharing for vmecsr address bus (19 downto 12)
 	constant scal_base :std_logic_vector(7 downto 0) :=x"01";
 	constant trig_base :std_logic_vector(7 downto 0) :=x"02";
+	constant scal_base_SC :std_logic_vector(7 downto 0) :=x"03";
 	-- constant pw_base : std_logic_vector(7 downto 0)  :=x"03";
 	constant top_base : std_logic_vector(7 downto 0) :=x"04"; 
 	constant disp_base : std_logic_vector(7 downto 0) :=x"05"; 
@@ -233,18 +235,27 @@ architecture rtl of vuprom_CBMaster is
 	constant SCCH: integer := 32*6;
 	constant SCBit: integer := 32;
 	signal scal_in : std_logic_vector(SCCH-1 downto 0);
+	attribute keep of scal_in: signal is "TRUE";
 	signal scal_oecsr : std_logic;
 	signal scal_ckcsr : std_logic;
+
+   -- SC Scaler
+	signal scal_data_o_SC : std_logic_vector(31 downto 0);
+	signal scal_in_SC : std_logic_vector(110-1 downto 0);
+	attribute keep of scal_in_SC: signal is "TRUE";
+	signal scal_oecsr_SC : std_logic;
+	signal scal_ckcsr_SC : std_logic;
+
 	
 	component scaler
 		generic ( 
-			NCh : integer := SCCH;
+			NCh : integer;
 			NBit : integer := SCBit
 			);  
 		port (
 			clkl : in STD_LOGIC;
 			clkh : in STD_LOGIC;		
-			scal_in : STD_LOGIC_VECTOR ( (SCCH-1) downto 0);				
+			scal_in : STD_LOGIC_VECTOR ( (NCh-1) downto 0);				
 			--............. vme interface .............
 			u_ad_reg :in std_logic_vector(11 downto 2);
 			u_dat_in :in std_logic_vector(31 downto 0);
@@ -450,6 +461,8 @@ begin ---- BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN -------
    			if (rising_edge(clk50)) then   
 					if 	(scal_oecsr ='1' ) then
 							din	<=  	scal_data_o;
+					elsif 	(scal_oecsr_SC ='1' ) then
+							din	<=	scal_data_o_SC; 
 					elsif 	(trig_oecsr ='1' ) then
 							din	<=	trig_data_o; 
 					elsif 	(top_oecsr ='1') then
@@ -473,13 +486,13 @@ begin ---- BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN -------
 
 	disp_matrix1: display_matrix 
 		port map (reset => res,
-		  lcd_din => DI(0),
-		  lcd_lp => DI(1), 
-		  lcd_flm => DI(2),
-		  lcd_scp => DI(3),
-		  lcd_led_grn => DI(4),
-		  lcd_led_red => DI(5),
-		 clk50 => clk50,
+			lcd_din => DI(0),
+			lcd_lp => DI(1), 
+			lcd_flm => DI(2),
+			lcd_scp => DI(3),
+			lcd_led_grn => DI(4),
+			lcd_led_red => DI(5),
+			clk50 => clk50,
 			disp_in => disp_in,
 			u_ad_reg=>u_ad_reg(11 downto 2), 
 			u_dat_in=>u_dat_in, 
@@ -488,7 +501,7 @@ begin ---- BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN -------
 			ws=>ws,
 			oecsr=>disp_oecsr, 
 			ckcsr=>disp_ckcsr
-						);
+		);
 	-- vme_access --
 	process(clk50, oecsr, ckcsr, u_ad_reg)
 	begin
@@ -548,6 +561,7 @@ begin ---- BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN -------
 -- scaler i/o
 	--scal_in(32*6-1 downto 0) <= vhdc_in( 32*6-1 downto 0);
 	scal_in <= SignalsTriggerToScaler;
+	scal_in_SC <= SignalsTriggerToScaler(191 downto 176) & PGIO3X ( 32 downto 1) & PGIO1X ( 32 downto 1) & IN2X ( 6 downto 1) & IN1X ( 24 downto 1);
 	
 	
 -- trigger i/o
@@ -581,7 +595,7 @@ begin ---- BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN -------
 	--     SCALER
 	--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
 
-	scaler_1: scaler port map (
+	scaler_DAQ: scaler generic map (NCh => SCCH) port map (
 									clkl=>clk50, clkh => clk100,
 									scal_in=>scal_in,
 									u_ad_reg=>u_ad_reg(11 downto 2), 
@@ -590,21 +604,26 @@ begin ---- BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN -------
 									oecsr=>scal_oecsr, 
 									ckcsr=>scal_ckcsr
 									);									
-			 
+	
+	scaler_SC: scaler generic map (NCh => 110) port map (
+									clkl=>clk50, clkh => clk100,
+									scal_in=>scal_in_SC,
+									u_ad_reg=>u_ad_reg(11 downto 2), 
+									u_dat_in=>u_dat_in, 
+									u_data_o=>scal_data_o_SC,
+									oecsr=>scal_oecsr_SC, 
+									ckcsr=>scal_ckcsr_SC
+									);									
+
 	process(clk50, oecsr, ckcsr, u_ad_reg)
 	begin
 		if (rising_edge(clk50)) then   
 		--scaler--
-			if (oecsr ='1' and u_ad_reg(19 downto 12)=scal_base) then 
-				scal_oecsr <='1';
-			else
-				scal_oecsr <='0';
-			end if;
-			if (ckcsr ='1' and u_ad_reg(19 downto 12)=scal_base) then 
-				scal_ckcsr <='1';
-			else
-				scal_ckcsr <='0';
-			end if;	
+			if (oecsr ='1' and u_ad_reg(19 downto 12)=scal_base) then scal_oecsr <='1'; else scal_oecsr <='0'; end if;
+			if (ckcsr ='1' and u_ad_reg(19 downto 12)=scal_base) then scal_ckcsr <='1'; else scal_ckcsr <='0'; end if;	
+
+			if (oecsr ='1' and u_ad_reg(19 downto 12)=scal_base_SC) then scal_oecsr_SC <='1'; else scal_oecsr_SC <='0'; end if;
+			if (ckcsr ='1' and u_ad_reg(19 downto 12)=scal_base_SC) then scal_ckcsr_SC <='1'; else scal_ckcsr_SC <='0'; end if;	
 
 		end if;				
 	end process;
