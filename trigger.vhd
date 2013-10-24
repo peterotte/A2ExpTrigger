@@ -23,6 +23,8 @@ entity trigger is
 		nim_out  : out STD_LOGIC;
 		ToScalerOut : out STD_LOGIC_VECTOR(191 downto 0);
 		Debug_ActualState_Out : out STD_LOGIC_VECTOR(3 downto 0);
+		SC_Scalers_L1Out : out STD_LOGIC_VECTOR(7 downto 0);
+		SC_Scalers_L2Out : out STD_LOGIC_VECTOR(7 downto 0);
 		led	     : out STD_LOGIC_VECTOR(8 downto 1); -- 8 LEDs onboard
 		pgxled   : out STD_LOGIC_VECTOR(8 downto 1); -- 8 LEDs on PIG board
 		Global_Reset_After_Power_Up : in std_logic;
@@ -39,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13102460";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13102462";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -571,6 +573,7 @@ begin
 	DebugSignals(53) <= L1Trigger;
 	DebugSignals(54) <= ImmediateReset;
 	DebugSignals(62 downto 55) <= ConditionsOutL1;
+	SC_Scalers_L1Out <= ConditionsOutL1;
 	
 	nim_out <= PreL1Trigger_Stored;
 	
@@ -673,6 +676,7 @@ begin
 	DebugSignals(122) <= L2Trigger;
 	DebugSignals(123) <= FastClear;
 	DebugSignals(131 downto 124) <= ConditionsOutL2;
+	SC_Scalers_L2Out <= ConditionsOutL2;
 	ExperimentTrigger <= L2Trigger;
 	
 	-- Delay of FastClear signal
