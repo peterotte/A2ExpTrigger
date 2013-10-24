@@ -39,7 +39,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"1309265f";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13102460";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -162,6 +162,7 @@ architecture RTL of trigger is
 	--MainSection
 	--L1
 	signal TAPSPulser : std_logic;
+	signal TAPSLED1OR, TAPSLED2M2Plus : std_logic;
 	attribute keep : string;
 	signal L1Busy : std_logic;
 	signal PreL1Trigger_Stored, PreL1Trigger_Stored_ExtDelayed, Inter_Delayed : std_logic;
@@ -458,10 +459,10 @@ begin
 	------------------------------------------------------------------------------------------------
 	-- Generate Pulser
 	PedestalPulser : Pulser Generic Map (
-		DividingPower => 13, 
+		DividingPower => 11, 
 		OutputWidth => 10) Port Map (
 		clock => clock50, 
-		Sig_Out => PulserOutput); -- 13 = 50MHz/2**(13+1) = 3.05kHz
+		Sig_Out => PulserOutput); -- 11 = 50MHz/2**(11+1) = 12.2kHz
 	--trig_out(28) <= clock0_5; ---needs to be changed to other output
 	--trig_out(29) <= clock1; --1MHz Clock  ---needs to be changed to other output
 
@@ -476,13 +477,19 @@ begin
 	ToScalerOut(191) <= clock1;
 	------------------------------------------------------------------------------------------------
 
+
+	------------------------------------------------------------------------------------------------
+	-- MainSection: InputSection
+   TAPSLED1OR <= '1' when trig_in(2*32+5 downto 2*32+0) /= "0" else '0'; --ch5..0: LED 1 Sector ORs
+	------------------------------------------------------------------------------------------------
 		
 	
 	------------------------------------------------------------------------------------------------
 	-- MainSection: InputSection
 	TAPSPulser <= trig_in(2*32+30); --IN3, ch30
+	TAPSLED2M2Plus <= trig_in(2*32+29); --IN3, ch29
 	
-	RawL1Triggers <= TAPSPulser&PulserOutput&"00"&trig_in(11 downto 0);    -- IN1 ch0..11 --NRawInputs
+	RawL1Triggers <= TAPSPulser&PulserOutput& TAPSLED2M2Plus&TAPSLED1OR& Debug_ActualState(1 downto 0) & trig_in(9 downto 0);    -- IN1 ch0..11 --NRawInputs
 
 	Inst_InputSection : InputSection GENERIC MAP (
 		NRawL1Inputs => NRawInputs
