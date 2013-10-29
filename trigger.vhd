@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13102462";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13102964";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -75,12 +75,13 @@ architecture RTL of trigger is
 	--Readout / Total Dead Time
 	constant BASE_TRIG_SelectIncludeCPU : sub_Address							:= x"40"; --r/w
 	constant BASE_TRIG_DisableTriggerSignal : sub_Address						:= x"41"; --r/w
-	constant BASE_TRIG_EnableTAPSSignal : sub_Address							:= x"42"; --r/w
 	constant BASE_TRIG_ResetVMEbusCPUsState : sub_Address 					:= x"43"; --w   <-- write a 0x1 to it
 	constant BASE_TRIG_PerformSignalOnMasterReset : sub_Address 			:= x"44"; --w   <-- write a 0x1 to it
 	constant BASE_TRIG_SingleVMECPUsReadoutComplete_Local : sub_Address 	:= x"45"; --w  <-- acts like ACK of CBD
 	constant BASE_TRIG_ExpTrigger_Delayed_Local : sub_Address 				:= x"46"; --r/w  <-- acts like INT of CBD
 	constant BASE_TRIG_OutputForARTCS : sub_Address 							:= x"47"; --w  <-- acts like ouptut registers for TCS
+	constant BASE_TRIG_HelicityInhibitOut_Register : sub_Address         := x"48"; --r/w <-- to put the helicity change signal into total deadtime
+	constant BASE_TRIG_HelicityRegisterSaved : sub_Address               := x"49"; --r
 	
 	--Delay: CPU Interrupt Signals / FastClear
 	constant BASE_TRIG_CPUInterruptSignalsDelayTime_0 : sub_Address		:= x"50"; --r/w
@@ -126,6 +127,14 @@ architecture RTL of trigger is
 
 	------------------------------------------------------------------------------	
 
+	signal HelicityOutput, HelicityInhibitOut : std_logic;
+	signal HelicityInhibitOut_Register : std_logic;
+	signal HelicityInhibitOut_IntoTotalDeadtime : std_logic;
+	signal MAMIHelicityResponse : std_logic;
+	
+	signal AllORRawTriggers_IntDelayed_L0, AllORRawTriggers_IntDelayed_L1 : std_logic;
+	signal HelicityRegisterSaved, HelicityRegisterToBeSaved : std_logic_vector(2 downto 0);
+	
 	COMPONENT HelicityBitGenerator
 	PORT(
 		clock0_5 : IN std_logic;
@@ -325,9 +334,6 @@ architecture RTL of trigger is
 	--Total Dead Time
 	signal TotalDeadTime_Signal : std_logic;
 	signal DisableTriggerSignal : std_logic := '1';
-	signal BusyTAPS, Inter_BusyTAPS : std_logic;
-	signal BusyTagger : std_logic;
-	signal EnableTAPSSignal : STD_LOGIC;
 
 	COMPONENT BusyChannel
 	PORT(
@@ -709,13 +715,31 @@ begin
 	
 	------------------------------------------------------------------------------------------------
 	--This is used for the case, the trigger comes on the tagger side in use
---	Inst_HelicityBitGenerator: HelicityBitGenerator PORT MAP(
---		clock0_5 => clock0_5,
---		clock100 => clock100,
---		HelicityOutput => trig_out(16),
---		InhibitOut => trig_out(17),
---		debug_out => open
---	);
+	MAMIHelicityResponse <= trig_in(29);
+	Inst_HelicityBitGenerator: HelicityBitGenerator PORT MAP(
+		clock0_5 => clock0_5,
+		clock100 => clock100,
+		HelicityOutput => HelicityOutput,
+		InhibitOut => HelicityInhibitOut,
+		debug_out => open
+	);
+	trig_out(32+20) <= HelicityOutput;
+	trig_out(32+21) <= HelicityInhibitOut;
+	DebugSignals(73 downto 70) <= clock0_5 & MAMIHelicityResponse & HelicityInhibitOut & HelicityOutput;
+	HelicityInhibitOut_IntoTotalDeadtime <= HelicityInhibitOut when HelicityInhibitOut_Register = '1' else '0';
+	
+	HelicityRegisterToBeSaved <= MAMIHelicityResponse & HelicityInhibitOut & HelicityOutput;
+	process (clock200)
+	begin
+		if rising_edge(clock200) then
+			AllORRawTriggers_IntDelayed_L0 <= L1_AllORRawTriggers_IntDelayed;
+			AllORRawTriggers_IntDelayed_L1 <= AllORRawTriggers_IntDelayed_L0;
+			
+			if (AllORRawTriggers_IntDelayed_L1 = '0') and (AllORRawTriggers_IntDelayed_L0 = '1') then
+				HelicityRegisterSaved <= HelicityRegisterToBeSaved;
+			end if;
+		end if;
+	end process;
 	------------------------------------------------------------------------------------------------
 	
 	------------------------------------------------------------------------------------------------
@@ -808,22 +832,10 @@ begin
 
 	------------------------------------------------------------------------------------------------
 	-- Total Dead Time
-	BusyTAPS <= trig_in(31+2*32); --IN3, ch31
-	DebugSignals(68) <= BusyTAPS;
-	BusyTagger <= '0'; -- was before 9.9.2013 trig_in(22);
-	DebugSignals(69) <= BusyTagger;
-	
-	Inst_BusyChannel_TAPS: BusyChannel PORT MAP(
-		BusyIn => BusyTAPS,
-		BusyOut => Inter_BusyTAPS,
-		SelectIn => EnableTAPSSignal
-	);
-	
-	TotalDeadTime_Signal <= BusyTagger or L1Busy or L2Busy or 
-		BusyAllCPUs_Signal or DisableTriggerSignal or Inter_BusyTAPS or
-		L1Trigger_Gated or L1Trigger2_Gated;
+	TotalDeadTime_Signal <= L1Busy or L2Busy or 
+		BusyAllCPUs_Signal or DisableTriggerSignal or
+		L1Trigger_Gated or L1Trigger2_Gated or HelicityInhibitOut_IntoTotalDeadtime;
 
-	
 	DebugSignals(65) <= TotalDeadTime_Signal;
 	DebugSignals(66) <= L1Busy;
 	DebugSignals(67) <= L2Busy;
@@ -906,8 +918,9 @@ begin
 			--Readout / Total Dead Time
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_SelectIncludeCPU) then 					u_data_o(NVMEbusChs-1 downto 0) <= SelectIncludeCPU; end if;
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_DisableTriggerSignal) then 			u_data_o(0) <= DisableTriggerSignal; end if;
-			if (u_ad_reg(11 downto 4) =  BASE_TRIG_EnableTAPSSignal) then 					u_data_o(0) <= EnableTAPSSignal; end if;
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_ExpTrigger_Delayed_Local) then 		u_data_o(0) <= ExpTrigger_Delayed_Local; end if;
+			if (u_ad_reg(11 downto 4) =  BASE_TRIG_HelicityInhibitOut_Register) then 	u_data_o(0) <= HelicityInhibitOut_Register; end if;
+			if (u_ad_reg(11 downto 4) =  BASE_TRIG_HelicityRegisterSaved) then 			u_data_o(2 downto 0) <= HelicityRegisterSaved; end if;
 			--CPU Interrupt Signals Delays / FastClear
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_CPUInterruptSignalsDelayTime_0) then 	u_data_o(15 downto 0) <= CPUInterruptSignalsDelayTime(16*0+15 downto 16*0); end if;
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_CPUInterruptSignalsDelayTime_1) then 	u_data_o(15 downto 0) <= CPUInterruptSignalsDelayTime(16*1+15 downto 16*1); end if;
@@ -996,11 +1009,11 @@ begin
 			--Readout / Total Dead Time
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_SelectIncludeCPU) ) then 				SelectIncludeCPU <= u_dat_in(NVMEbusChs-1 downto 0); end if;
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_DisableTriggerSignal) ) then 			DisableTriggerSignal <= u_dat_in(0); end if;
-			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_EnableTAPSSignal) ) then 				EnableTAPSSignal <= u_dat_in(0); end if;
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_ResetVMEbusCPUsState) ) then 			ResetVMEbusCPUsState <= u_dat_in(0); end if;
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_PerformSignalOnMasterReset) ) then 	PerformSignalOnMasterReset <= u_dat_in(0); end if;			
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_SingleVMECPUsReadoutComplete_Local) ) then SingleVMECPUsReadoutComplete_Local <= u_dat_in(0); end if;
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_OutputForARTCS) ) then 					OutputForARTCS <= u_dat_in(1 downto 0); end if;
+			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_HelicityInhibitOut_Register) ) then HelicityInhibitOut_Register <= u_dat_in(0); end if;
 			--CPUs Interrupt Signal Delay / FastClear
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_CPUInterruptSignalsDelayTime_0) ) then CPUInterruptSignalsDelayTime(16*0+15 downto 16*0) <= u_dat_in(15 downto 0); end if;
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_CPUInterruptSignalsDelayTime_1) ) then CPUInterruptSignalsDelayTime(16*1+15 downto 16*1) <= u_dat_in(15 downto 0); end if;

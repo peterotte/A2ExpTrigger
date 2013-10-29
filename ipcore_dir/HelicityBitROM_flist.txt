@@ -1,0 +1,19 @@
+# Output products list for <HelicityBitROM>
+HelicityBitROM.asy
+HelicityBitROM.gise
+HelicityBitROM.ise
+HelicityBitROM.mif
+HelicityBitROM.ngc
+HelicityBitROM.sym
+HelicityBitROM.v
+HelicityBitROM.veo
+HelicityBitROM.vhd
+HelicityBitROM.vho
+HelicityBitROM.xco
+HelicityBitROM.xise
+HelicityBitROM_flist.txt
+HelicityBitROM_readme.txt
+HelicityBitROM_xdb\tmp\
+HelicityBitROM_xmdf.tcl
+_xmsgs\
+blk_mem_gen_ds512.pdf
