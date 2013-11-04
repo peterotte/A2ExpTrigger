@@ -232,7 +232,7 @@ architecture rtl of vuprom_CBMaster is
 	--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
 
 	signal scal_data_o : std_logic_vector(31 downto 0);
-	constant SCCH: integer := 32*6;
+	constant SCCH: integer := 32*6+1;
 	constant SCBit: integer := 32;
 	signal scal_in : std_logic_vector(SCCH-1 downto 0);
 	attribute keep of scal_in: signal is "TRUE";
@@ -241,7 +241,8 @@ architecture rtl of vuprom_CBMaster is
 
    -- SC Scaler
 	signal scal_data_o_SC : std_logic_vector(31 downto 0);
-	signal scal_in_SC : std_logic_vector(130-1 downto 0);
+	constant SCCH_SC: integer := 131;
+	signal scal_in_SC : std_logic_vector(SCCH_SC-1 downto 0);
 	attribute keep of scal_in_SC: signal is "TRUE";
 	signal scal_oecsr_SC : std_logic;
 	signal scal_ckcsr_SC : std_logic;
@@ -275,7 +276,7 @@ architecture rtl of vuprom_CBMaster is
 	signal trig_out : std_logic_vector( 63 downto 0);
 	signal trig_oecsr : std_logic;
 	signal trig_ckcsr : std_logic;
-	signal SignalsTriggerToScaler : std_logic_vector(191 downto 0);
+	signal SignalsTriggerToScaler : std_logic_vector(192 downto 0);
 	signal Debug_ActualState : STD_LOGIC_VECTOR(3 downto 0);
 	signal SC_Scalers_L1Out : STD_LOGIC_VECTOR(7 downto 0);
 	signal SC_Scalers_L2Out : STD_LOGIC_VECTOR(7 downto 0);
@@ -293,7 +294,7 @@ architecture rtl of vuprom_CBMaster is
 			trig_out : out STD_LOGIC_VECTOR ( 63 downto 0);
 			nim_in   : in  STD_LOGIC;
 			nim_out  : out STD_LOGIC;
-			ToScalerOut : out STD_LOGIC_VECTOR(191 downto 0);
+			ToScalerOut : out STD_LOGIC_VECTOR(192 downto 0);
 			Debug_ActualState_Out : out STD_LOGIC_VECTOR(3 downto 0);
 			SC_Scalers_L1Out : out STD_LOGIC_VECTOR(7 downto 0);
 			SC_Scalers_L2Out : out STD_LOGIC_VECTOR(7 downto 0);
@@ -566,7 +567,7 @@ begin ---- BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN -------
 -- scaler i/o
 	--scal_in(32*6-1 downto 0) <= vhdc_in( 32*6-1 downto 0);
 	scal_in <= SignalsTriggerToScaler;
-	scal_in_SC <= SC_Scalers_L2Out & SC_Scalers_L1Out & Debug_ActualState & 
+	scal_in_SC <= SignalsTriggerToScaler(192) & SC_Scalers_L2Out & SC_Scalers_L1Out & Debug_ActualState & 
 		SignalsTriggerToScaler(191 downto 176) & PGIO3X ( 32 downto 1) & PGIO1X ( 32 downto 1) & IN2X ( 6 downto 1) & IN1X ( 24 downto 1);
 
 	
@@ -611,7 +612,7 @@ begin ---- BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN  BEGIN -------
 									ckcsr=>scal_ckcsr
 									);									
 	
-	scaler_SC: scaler generic map (NCh => 130) port map (
+	scaler_SC: scaler generic map (NCh => SCCH_SC) port map (
 									clkl=>clk50, clkh => clk100,
 									scal_in=>scal_in_SC,
 									u_ad_reg=>u_ad_reg(11 downto 2), 
