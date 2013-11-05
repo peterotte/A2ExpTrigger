@@ -21,7 +21,7 @@ entity trigger is
 		trig_out : out STD_LOGIC_VECTOR (63 downto 0);
 		nim_in   : in  STD_LOGIC;
 		nim_out  : out STD_LOGIC;
-		ToScalerOut : out STD_LOGIC_VECTOR(192 downto 0);
+		ToScalerOut : out STD_LOGIC_VECTOR(195 downto 0);
 		Debug_ActualState_Out : out STD_LOGIC_VECTOR(3 downto 0);
 		SC_Scalers_L1Out : out STD_LOGIC_VECTOR(7 downto 0);
 		SC_Scalers_L2Out : out STD_LOGIC_VECTOR(7 downto 0);
@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13110465";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13110566";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -685,6 +685,9 @@ begin
 	SC_Scalers_L2Out <= ConditionsOutL2;
 	ExperimentTrigger <= L2Trigger;
 	ToScalerOut(192) <= ExperimentTrigger;
+	ToScalerOut(193) <= ImmediateReset;
+	ToScalerOut(194) <= L1Trigger;
+	ToScalerOut(195) <= FastClear;
 	
 	-- Delay of FastClear signal
 	Inst_DelayFastClear: DelayByCounterFixedWidth
