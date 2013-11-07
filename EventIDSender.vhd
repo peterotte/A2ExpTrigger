@@ -10,7 +10,7 @@ Library UNISIM;
 use UNISIM.vcomponents.all; --  for bufg
 
 entity EventIDSender is
-    Port ( StatusCounter : out  STD_LOGIC_VECTOR (7 downto 0);
+    Port ( StatusCounter : out  STD_LOGIC_VECTOR (6 downto 0);
            UserEventID : in  STD_LOGIC_VECTOR (31 downto 0);
            ResetSenderCounter : in  STD_LOGIC;
            OutputPin : out  STD_LOGIC;
@@ -21,8 +21,8 @@ architecture Behavioral of EventIDSender is
 
 	signal CalculatedParityBit : std_logic;
 	signal SenderClock : std_logic;
-	signal ClockPreScaleCounter : std_logic_vector(3 downto 0);
-	signal Inter_StatusCounter : STD_LOGIC_VECTOR (7 downto 0);
+	signal ClockPreScaleCounter : std_logic_vector(1 downto 0);
+	signal Inter_StatusCounter : STD_LOGIC_VECTOR (6 downto 0);
 
 begin
 	StatusCounter <= Inter_StatusCounter;
@@ -32,8 +32,8 @@ begin
 		if rising_edge(clock50) then
 			ClockPreScaleCounter <= ClockPreScaleCounter +1;
 		end if;
-		SenderClock <= ClockPreScaleCounter(1);
 	end process;
+	SenderClock <= ClockPreScaleCounter(1);
 
 
 	CalculatedParityBit <= UserEventID(0) xor UserEventID(1) xor UserEventID(2) xor UserEventID(3) xor UserEventID(4) xor UserEventID(5) xor 
@@ -46,58 +46,52 @@ begin
 	process(SenderClock)
 	begin
 		if rising_edge(SenderClock) then
-			if Inter_StatusCounter(7) = '0' then
+			if (ResetSenderCounter = '1') then
+				Inter_StatusCounter <= b"0000000";
+			elsif (Inter_StatusCounter(6) = '0') then
 				Inter_StatusCounter <= Inter_StatusCounter +1;
-			end if;
-			if Inter_StatusCounter(6) = '1' then
-				Inter_StatusCounter <= x"ff";
-			end if;
-			if ResetSenderCounter = '1' then
-				Inter_StatusCounter <= x"00";
+			else
+				Inter_StatusCounter <= Inter_StatusCounter;
 			end if;
 		end if;
 	end process;
 
-
-	OutputPin <= '1' when Inter_StatusCounter = x"01" else
-						UserEventID(0) when Inter_StatusCounter = x"02" else
-						UserEventID(1) when Inter_StatusCounter = x"03" else
-						UserEventID(2) when Inter_StatusCounter = x"04" else
-						UserEventID(3) when Inter_StatusCounter = x"05" else
-						UserEventID(4) when Inter_StatusCounter = x"06" else
-						UserEventID(5) when Inter_StatusCounter = x"07" else
-						UserEventID(6) when Inter_StatusCounter = x"08" else
-						UserEventID(7) when Inter_StatusCounter = x"09" else
-						UserEventID(8) when Inter_StatusCounter = x"0a" else
-						UserEventID(9) when Inter_StatusCounter = x"0b" else
-						UserEventID(10) when Inter_StatusCounter = x"0c" else
-						UserEventID(11) when Inter_StatusCounter = x"0d" else
-						UserEventID(12) when Inter_StatusCounter = x"0e" else
-						UserEventID(13) when Inter_StatusCounter = x"0f" else
-						UserEventID(14) when Inter_StatusCounter = x"10" else
-						UserEventID(15) when Inter_StatusCounter = x"11" else
-						UserEventID(16) when Inter_StatusCounter = x"12" else
-						UserEventID(17) when Inter_StatusCounter = x"13" else
-						UserEventID(18) when Inter_StatusCounter = x"14" else
-						UserEventID(19) when Inter_StatusCounter = x"15" else
-						UserEventID(20) when Inter_StatusCounter = x"16" else
-						UserEventID(21) when Inter_StatusCounter = x"17" else
-						UserEventID(22) when Inter_StatusCounter = x"18" else
-						UserEventID(23) when Inter_StatusCounter = x"19" else
-						UserEventID(24) when Inter_StatusCounter = x"1a" else
-						UserEventID(25) when Inter_StatusCounter = x"1b" else
-						UserEventID(26) when Inter_StatusCounter = x"1c" else
-						UserEventID(27) when Inter_StatusCounter = x"1d" else
-						UserEventID(28) when Inter_StatusCounter = x"1e" else
-						UserEventID(29) when Inter_StatusCounter = x"1f" else
-						UserEventID(30) when Inter_StatusCounter = x"20" else
-						UserEventID(31) when Inter_StatusCounter = x"21" else
-						CalculatedParityBit when Inter_StatusCounter = x"22" else
-						'1' when Inter_StatusCounter = x"23" else
+	OutputPin <= '1' when Inter_StatusCounter = b"000"&x"1" else
+						UserEventID(0) when Inter_StatusCounter = b"000"&x"2" else
+						UserEventID(1) when Inter_StatusCounter = b"000"&x"3" else
+						UserEventID(2) when Inter_StatusCounter = b"000"&x"4" else
+						UserEventID(3) when Inter_StatusCounter = b"000"&x"5" else
+						UserEventID(4) when Inter_StatusCounter = b"000"&x"6" else
+						UserEventID(5) when Inter_StatusCounter = b"000"&x"7" else
+						UserEventID(6) when Inter_StatusCounter = b"000"&x"8" else
+						UserEventID(7) when Inter_StatusCounter = b"000"&x"9" else
+						UserEventID(8) when Inter_StatusCounter = b"000"&x"a" else
+						UserEventID(9) when Inter_StatusCounter = b"000"&x"b" else
+						UserEventID(10) when Inter_StatusCounter = b"000"&x"c" else
+						UserEventID(11) when Inter_StatusCounter = b"000"&x"d" else
+						UserEventID(12) when Inter_StatusCounter = b"000"&x"e" else
+						UserEventID(13) when Inter_StatusCounter = b"000"&x"f" else
+						UserEventID(14) when Inter_StatusCounter = b"001"&x"0" else
+						UserEventID(15) when Inter_StatusCounter = b"001"&x"1" else
+						UserEventID(16) when Inter_StatusCounter = b"001"&x"2" else
+						UserEventID(17) when Inter_StatusCounter = b"001"&x"3" else
+						UserEventID(18) when Inter_StatusCounter = b"001"&x"4" else
+						UserEventID(19) when Inter_StatusCounter = b"001"&x"5" else
+						UserEventID(20) when Inter_StatusCounter = b"001"&x"6" else
+						UserEventID(21) when Inter_StatusCounter = b"001"&x"7" else
+						UserEventID(22) when Inter_StatusCounter = b"001"&x"8" else
+						UserEventID(23) when Inter_StatusCounter = b"001"&x"9" else
+						UserEventID(24) when Inter_StatusCounter = b"001"&x"a" else
+						UserEventID(25) when Inter_StatusCounter = b"001"&x"b" else
+						UserEventID(26) when Inter_StatusCounter = b"001"&x"c" else
+						UserEventID(27) when Inter_StatusCounter = b"001"&x"d" else
+						UserEventID(28) when Inter_StatusCounter = b"001"&x"e" else
+						UserEventID(29) when Inter_StatusCounter = b"001"&x"f" else
+						UserEventID(30) when Inter_StatusCounter = b"010"&x"0" else
+						UserEventID(31) when Inter_StatusCounter = b"010"&x"1" else
+						CalculatedParityBit when Inter_StatusCounter = b"010"&x"2" else
+						'1' when Inter_StatusCounter = b"010"&x"3" else
 						'0';
-	
-
-
 
 end Behavioral;
 

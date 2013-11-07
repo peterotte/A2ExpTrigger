@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13110566";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13110668";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -396,7 +396,7 @@ architecture RTL of trigger is
 	-- EventID Sender
 	signal EventID_UserEventID : std_logic_vector(31 downto 0);
 	signal EventID_ResetSenderCounter : std_logic;
-	signal EventID_StatusCounter : std_logic_vector(7 downto 0);
+	signal EventID_StatusCounter : std_logic_vector(6 downto 0);
 	signal EventID_OutputPin : std_logic;
 
 	COMPONENT EventIDSender
@@ -404,7 +404,7 @@ architecture RTL of trigger is
 		UserEventID : IN std_logic_vector(31 downto 0);
 		ResetSenderCounter : IN std_logic;
 		clock50 : IN std_logic;          
-		StatusCounter : OUT std_logic_vector(7 downto 0);
+		StatusCounter : OUT std_logic_vector(6 downto 0);
 		OutputPin : OUT std_logic
 		);
 	END COMPONENT;
@@ -450,7 +450,7 @@ begin
 
 	----------------------------------------------------------------------------------------------
 	-- Oszi
-	DebugSignals(479 downto 256) <= x"00000000"&trig_in(191 downto 0);
+	DebugSignals(479 downto 256) <= EventID_OutputPin& b"000" & x"0000000"&trig_in(191 downto 0);
 	DebugSignals(255 downto 247) <= Oszi_Debug_Out&Debug_ActualState;
 	
 	Inst_OsziCh: OsziCh PORT MAP(
@@ -474,7 +474,7 @@ begin
 	--trig_out(28) <= clock0_5; ---needs to be changed to other output
 	--trig_out(29) <= clock1; --1MHz Clock  ---needs to be changed to other output
 
-	ToScalerOut(31 downto 0) <= EventID_StatusCounter(7 downto 0) & trig_in(31-8 downto 0);
+	ToScalerOut(31 downto 0) <= "0"&EventID_StatusCounter(6 downto 0) & trig_in(31-8 downto 0);
 	
 	ToScalerOut(175 downto 32) <= trig_in(175 downto 32);
 
@@ -795,6 +795,7 @@ begin
 
 	trig_out(32+12 downto 32+0) <= CPUInterruptSignalsDelayed(12 downto 0);
 	ExpTrigger_Delayed_Local <= CPUInterruptSignalsDelayed(13);
+	trig_out(32+30) <= EventID_OutputPin;
 	trig_out(32+31) <= EventID_OutputPin;
 	
 	------------------------------------------------------------------------------------------------
@@ -960,7 +961,7 @@ begin
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_Oszi_DataOut_7) then 					u_data_o(31 downto 0) <= Oszi_DataOut(32*8-1 downto 32*7); end if;
 			--EventID
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_EventID_SetUserEventID) then 			u_data_o(31 downto 0) <= EventID_UserEventID; end if;
-			if (u_ad_reg(11 downto 4) =  BASE_TRIG_EventID_ReadStatus) then 				u_data_o(7 downto 0) <= EventID_StatusCounter; end if;
+			if (u_ad_reg(11 downto 4) =  BASE_TRIG_EventID_ReadStatus) then 				u_data_o(6 downto 0) <= EventID_StatusCounter; end if;
 
 		end if;
 	end process;
