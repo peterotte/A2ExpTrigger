@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13110972";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13110973";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -472,8 +472,7 @@ begin
 		ResetSenderCounter => EventIDRev_ResetSenderCounter,
 		DebugOut => EventIDRev_DebugOut
 	);
-	trig_out(32+13+5 downto 32+13) <= EventIDRev_DebugOut;
-
+	
 	----------------------------------------------------------------------------------------------
 
 
@@ -526,7 +525,9 @@ begin
 	TAPSPulser <= trig_in(2*32+30); --IN3, ch30
 	TAPSLED2M2Plus <= trig_in(2*32+29); --IN3, ch29
 	
-	RawL1Triggers <= TAPSPulser&PulserOutput& TAPSLED2M2Plus&TAPSLED1OR& Debug_ActualState(1 downto 0) & trig_in(9 downto 0);    -- IN1 ch0..11 --NRawInputs
+--	RawL1Triggers <= TAPSPulser&PulserOutput& TAPSLED2M2Plus&TAPSLED1OR& Debug_ActualState(1 downto 0) & trig_in(9 downto 0);
+	RawL1Triggers <= TAPSPulser&PulserOutput& Debug_ActualState(3 downto 0)& trig_in(9 downto 8)&
+		TAPSLED2M2Plus&TAPSLED1OR&  trig_in(5 downto 0);
 
 	Inst_InputSection : InputSection GENERIC MAP (
 		NRawL1Inputs => NRawInputs
