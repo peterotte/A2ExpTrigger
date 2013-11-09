@@ -55,6 +55,7 @@ architecture Behavioral of VMEbusCh is
 	signal Inter_CPUBusy : std_logic;
 	signal Inter_Reset : std_logic;
 	signal Inter_Interrupt_Delayed, Inter_Interrupt_Delayed_2 : std_logic;
+	signal Interrupt_Clocked, Inter_Interrupt_Delayed_Clocked : std_logic_vector(1 downto 0); --to save the Interrupt signal with each clock
 begin
 	-- Convert ACK signal into Reset signal (gated)
 	SingleCPUReadoutComplete_Inverted <= not SingleCPUReadoutComplete;
@@ -72,19 +73,29 @@ begin
 	Inter_Reset <= Reset or SingleCPUReadoutComplete_Inverted_Gated;
 
 	--Single Bit Storage
-	Inst_SingleBitStorage: SingleBitStorage PORT MAP(
-		Data => '1', 
-		Clock => Interrupt, 
-		Clear => Inter_Reset, 
-		Output => Inter_CPUBusy,
-		CE => '1'
-   );
-	process (clock)
+   -- this process replaces Inst_SingleBitStorage, safer, because no flaky signal can disturb
+	process (clock) --FF1
 	begin
 		if rising_edge(clock) then
-			
+			Interrupt_Clocked(0) <= Interrupt;
+			Interrupt_Clocked(1) <= Interrupt_Clocked(0);
 		end if;
 	end process;
+	
+	process (clock) --FF1
+	begin
+		if rising_edge(clock) then
+			if (Inter_Reset = '1') then
+				Inter_CPUBusy <= '0';
+			elsif Interrupt_Clocked = "01" then
+				Inter_CPUBusy <= '1';
+			else 
+				Inter_CPUBusy <= Inter_CPUBusy;
+			end if;
+		end if;
+	end process;
+	CPUbusyOut <= Inter_CPUBusy when SelectIncludeCPU = '1' else '0';
+
 	
 	--Delay of Interrupt signal send to CPU
 	Inst_DelayByCounterFixedWidth: DelayByCounterFixedWidth
@@ -98,17 +109,29 @@ begin
 				  DelayedOutput => Inter_Interrupt_Delayed
 		);
 	--Single Bit Storage for Delayed Interrupt signal
-	Inst_SingleBitStorage_2: SingleBitStorage PORT MAP(
-		Data => '1', 
-		Clock => Inter_Interrupt_Delayed, 
-		Clear => Inter_Reset, 
-		Output => Inter_Interrupt_Delayed_2,
-		CE => '1'
-   );
+   -- this process replaces Inst_SingleBitStorage_2, safer, because no flaky signal can disturb
+	process (clock) --FF2
+	begin
+		if rising_edge(clock) then
+			Inter_Interrupt_Delayed_Clocked(0) <= Inter_Interrupt_Delayed;
+			Inter_Interrupt_Delayed_Clocked(1) <= Inter_Interrupt_Delayed_Clocked(0);
+		end if;
+	end process;
+	
+	process (clock) --FF2
+	begin
+		if rising_edge(clock) then
+			if Inter_Reset = '1' then
+				Inter_Interrupt_Delayed_2 <= '0';
+			elsif Inter_Interrupt_Delayed_Clocked = "01" then
+				Inter_Interrupt_Delayed_2 <= '1';
+			else 
+				Inter_Interrupt_Delayed_2 <= Inter_Interrupt_Delayed_2;
+			end if;
+		end if;
+	end process;
+	
 	Interrupt_Delayed <= Inter_Interrupt_Delayed_2 when SelectIncludeCPU = '1' else '0';
 	
-	--
-	CPUbusyOut <= Inter_CPUBusy when SelectIncludeCPU = '1' else '0';
-
 end Behavioral;
 

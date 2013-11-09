@@ -53,7 +53,7 @@ architecture Behavioral of AllCPUs is
 	attribute keep of Inter_ReadoutCompleteReset: signal is "TRUE";
 	
 	signal Inter_VMECPUsBusy : std_logic_vector(NVMEbusChs-1 downto 0);
-	signal Pre_VMECPUsBusy, Pre_VMECPUsBusy_Inv : std_logic;
+	signal Pre_VMECPUsBusy, Inter_Pre_VMECPUsBusy, Pre_VMECPUsBusy_Inv : std_logic;
 begin
 
 	AllVMEbusChs: for i in 0 to NVMEbusChs-1 generate
@@ -71,7 +71,15 @@ begin
 		);
 	end generate;
 	SingleVMECPUsBusy <= Inter_VMECPUsBusy;
-	Pre_VMECPUsBusy <= '1' when Inter_VMECPUsBusy /= "0" else '0';
+	
+
+	Inter_Pre_VMECPUsBusy <= '1' when Inter_VMECPUsBusy /= "0" else '0';
+	process(clock100)
+	begin
+	  if rising_edge(clock100) then
+	    Pre_VMECPUsBusy <= Inter_Pre_VMECPUsBusy;
+	  end if;
+	end process;
 	Pre_VMECPUsBusy_Inv <= not Pre_VMECPUsBusy;
 	
 	GateShortener_1 : GateShortener GENERIC MAP (NCh => 4) PORT MAP (sig_in => Pre_VMECPUsBusy_Inv, sig_out => Inter_ReadoutCompleteReset, clock => clock100);

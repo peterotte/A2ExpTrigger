@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13110668";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13110972";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -121,7 +121,11 @@ architecture RTL of trigger is
 	--Event ID
 	constant BASE_TRIG_EventID_SetUserEventID : sub_Address					:= x"a0"; --r
 	constant BASE_TRIG_EventID_ResetSending : sub_Address						:= x"a1"; --w  --write 1 to it to reset
-	constant BASE_TRIG_EventID_ReadStatus : sub_Address						:= x"a2"; --r  
+	constant BASE_TRIG_EventID_ReadStatus : sub_Address						:= x"a2"; --r
+	constant BASE_TRIG_EventIDRev_ResetSenderCounter : sub_Address			:= x"a3"; --w
+	constant BASE_TRIG_EventIDRev_OutputUserEventID : sub_Address			:= x"a4"; --r
+	constant BASE_TRIG_EventIDRev_DebugOut : sub_Address						:= x"a5"; --r
+	
 
 
 
@@ -408,6 +412,21 @@ architecture RTL of trigger is
 		OutputPin : OUT std_logic
 		);
 	END COMPONENT;
+	
+	signal EventIDRev_ResetSenderCounter : std_logic;
+	signal EventIDRev_OutputUserEventID : std_logic_vector(31 downto 0);
+	signal EventIDRev_DebugOut : std_logic_vector(5 downto 0);
+
+	COMPONENT EventIDSerialReceiver
+	PORT(
+		clock : IN std_logic;
+		SerialIn : IN std_logic;
+		ResetSenderCounter : IN std_logic;          
+		OutputUserEventID : OUT std_logic_vector(31 downto 0);
+		DebugOut : OUT std_logic_vector(5 downto 0)
+		);
+	END COMPONENT;
+
 	----------------------------------------------------------------------------------------------
 
 	signal SignalsToCountingHouse, SignalsToCountingHouse_Gated : std_logic_vector(10 downto 1);
@@ -445,12 +464,22 @@ begin
 		OutputPin => EventID_OutputPin,
 		clock50 => clock50
 	);
+	
+	Inst_EventIDSerialReceiver: EventIDSerialReceiver PORT MAP(
+		clock => clock100,
+		SerialIn => Debug_ActualState(0), --EventID_OutputPin,
+		OutputUserEventID => EventIDRev_OutputUserEventID,
+		ResetSenderCounter => EventIDRev_ResetSenderCounter,
+		DebugOut => EventIDRev_DebugOut
+	);
+	trig_out(32+13+5 downto 32+13) <= EventIDRev_DebugOut;
+
 	----------------------------------------------------------------------------------------------
 
 
 	----------------------------------------------------------------------------------------------
 	-- Oszi
-	DebugSignals(479 downto 256) <= EventID_OutputPin& b"000" & x"0000000"&trig_in(191 downto 0);
+	DebugSignals(479 downto 256) <= EventID_OutputPin& b"100" & x"0000000"&trig_in(191 downto 0);
 	DebugSignals(255 downto 247) <= Oszi_Debug_Out&Debug_ActualState;
 	
 	Inst_OsziCh: OsziCh PORT MAP(
@@ -962,6 +991,9 @@ begin
 			--EventID
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_EventID_SetUserEventID) then 			u_data_o(31 downto 0) <= EventID_UserEventID; end if;
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_EventID_ReadStatus) then 				u_data_o(6 downto 0) <= EventID_StatusCounter; end if;
+			--EventID Receiver
+			if (u_ad_reg(11 downto 4) =  BASE_TRIG_EventIDRev_OutputUserEventID) then 	u_data_o(31 downto 0) <= EventIDRev_OutputUserEventID; end if;
+			if (u_ad_reg(11 downto 4) =  BASE_TRIG_EventIDRev_DebugOut) then 				u_data_o(5 downto 0) <= EventIDRev_DebugOut; end if;
 
 		end if;
 	end process;
@@ -989,6 +1021,7 @@ begin
 			PerformSignalOnMasterReset <= '0';
 			OutputForARTCS <= "00";
 			SingleVMECPUsReadoutComplete_Local <= '0';
+			EventIDRev_ResetSenderCounter <= '0';
 			--	Pre L1
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_PreTriggerMask) ) then 					PreTriggerMask <= u_dat_in(NRawInputs-1 downto 0); end if;
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_PreL1_PreScalerFactor_0) ) then 		PreL1_PreScalerFactor(31 downto 0) <= u_dat_in(31 downto 0); end if;
@@ -1047,6 +1080,8 @@ begin
 			EventID_ResetSenderCounter <= '0';
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_EventID_SetUserEventID) ) then 		EventID_UserEventID <= u_dat_in; end if;
 			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_EventID_ResetSending) ) then 			EventID_ResetSenderCounter <= u_dat_in(0); end if;
+			--EventID Receiver
+			if ( (ckcsr = '1') and (u_ad_reg(11 downto 4) =  BASE_TRIG_EventIDRev_ResetSenderCounter) ) then 	EventIDRev_ResetSenderCounter <= u_dat_in(0); end if;
 
 		end if;
 	end process;

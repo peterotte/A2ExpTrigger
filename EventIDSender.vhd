@@ -56,42 +56,49 @@ begin
 		end if;
 	end process;
 
-	OutputPin <= '1' when Inter_StatusCounter = b"000"&x"1" else
-						UserEventID(0) when Inter_StatusCounter = b"000"&x"2" else
-						UserEventID(1) when Inter_StatusCounter = b"000"&x"3" else
-						UserEventID(2) when Inter_StatusCounter = b"000"&x"4" else
-						UserEventID(3) when Inter_StatusCounter = b"000"&x"5" else
-						UserEventID(4) when Inter_StatusCounter = b"000"&x"6" else
-						UserEventID(5) when Inter_StatusCounter = b"000"&x"7" else
-						UserEventID(6) when Inter_StatusCounter = b"000"&x"8" else
-						UserEventID(7) when Inter_StatusCounter = b"000"&x"9" else
-						UserEventID(8) when Inter_StatusCounter = b"000"&x"a" else
-						UserEventID(9) when Inter_StatusCounter = b"000"&x"b" else
-						UserEventID(10) when Inter_StatusCounter = b"000"&x"c" else
-						UserEventID(11) when Inter_StatusCounter = b"000"&x"d" else
-						UserEventID(12) when Inter_StatusCounter = b"000"&x"e" else
-						UserEventID(13) when Inter_StatusCounter = b"000"&x"f" else
-						UserEventID(14) when Inter_StatusCounter = b"001"&x"0" else
-						UserEventID(15) when Inter_StatusCounter = b"001"&x"1" else
-						UserEventID(16) when Inter_StatusCounter = b"001"&x"2" else
-						UserEventID(17) when Inter_StatusCounter = b"001"&x"3" else
-						UserEventID(18) when Inter_StatusCounter = b"001"&x"4" else
-						UserEventID(19) when Inter_StatusCounter = b"001"&x"5" else
-						UserEventID(20) when Inter_StatusCounter = b"001"&x"6" else
-						UserEventID(21) when Inter_StatusCounter = b"001"&x"7" else
-						UserEventID(22) when Inter_StatusCounter = b"001"&x"8" else
-						UserEventID(23) when Inter_StatusCounter = b"001"&x"9" else
-						UserEventID(24) when Inter_StatusCounter = b"001"&x"a" else
-						UserEventID(25) when Inter_StatusCounter = b"001"&x"b" else
-						UserEventID(26) when Inter_StatusCounter = b"001"&x"c" else
-						UserEventID(27) when Inter_StatusCounter = b"001"&x"d" else
-						UserEventID(28) when Inter_StatusCounter = b"001"&x"e" else
-						UserEventID(29) when Inter_StatusCounter = b"001"&x"f" else
-						UserEventID(30) when Inter_StatusCounter = b"010"&x"0" else
-						UserEventID(31) when Inter_StatusCounter = b"010"&x"1" else
-						CalculatedParityBit when Inter_StatusCounter = b"010"&x"2" else
-						'1' when Inter_StatusCounter = b"010"&x"3" else
-						'0';
+	process (clock50)
+	begin
+		if rising_edge(clock50) then
+		  case Inter_StatusCounter is
+		    when b"000"&x"1" => OutputPin <= '1';
+			 when b"000"&x"2" => OutputPin <= UserEventID(0);
+			 when b"000"&x"3" => OutputPin <= UserEventID(1);
+			 when b"000"&x"4" => OutputPin <= UserEventID(2);
+			 when b"000"&x"5" => OutputPin <= UserEventID(3);
+			 when b"000"&x"6" => OutputPin <= UserEventID(4);
+			 when b"000"&x"7" => OutputPin <= UserEventID(5);
+			 when b"000"&x"8" => OutputPin <= UserEventID(6);
+			 when b"000"&x"9" => OutputPin <= UserEventID(7);
+			 when b"000"&x"a" => OutputPin <= UserEventID(8);
+			 when b"000"&x"b" => OutputPin <= UserEventID(9);
+			 when b"000"&x"c" => OutputPin <= UserEventID(10);
+			 when b"000"&x"d" => OutputPin <= UserEventID(11);
+			 when b"000"&x"e" => OutputPin <= UserEventID(12);
+			 when b"000"&x"f" => OutputPin <= UserEventID(13);
+			 when b"001"&x"0" => OutputPin <= UserEventID(14);
+			 when b"001"&x"1" => OutputPin <= UserEventID(15);
+			 when b"001"&x"2" => OutputPin <= UserEventID(16);
+			 when b"001"&x"3" => OutputPin <= UserEventID(17);
+			 when b"001"&x"4" => OutputPin <= UserEventID(18);
+			 when b"001"&x"5" => OutputPin <= UserEventID(19);
+			 when b"001"&x"6" => OutputPin <= UserEventID(20);
+			 when b"001"&x"7" => OutputPin <= UserEventID(21);
+			 when b"001"&x"8" => OutputPin <= UserEventID(22);
+			 when b"001"&x"9" => OutputPin <= UserEventID(23);
+			 when b"001"&x"a" => OutputPin <= UserEventID(24);
+			 when b"001"&x"b" => OutputPin <= UserEventID(25);
+			 when b"001"&x"c" => OutputPin <= UserEventID(26);
+			 when b"001"&x"d" => OutputPin <= UserEventID(27);
+			 when b"001"&x"e" => OutputPin <= UserEventID(28);
+			 when b"001"&x"f" => OutputPin <= UserEventID(29);
+			 when b"010"&x"0" => OutputPin <= UserEventID(30);
+			 when b"010"&x"1" => OutputPin <= UserEventID(31);
+			 when b"010"&x"2" => OutputPin <= CalculatedParityBit;
+			 when b"010"&x"3" => OutputPin <= '1';
+			 when others => OutputPin <= '0';
+			end case;
+		end if;
+	end process;
 
 end Behavioral;
 
