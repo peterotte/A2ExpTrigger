@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13110973";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13111174";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -757,6 +757,7 @@ begin
 		InhibitOut => HelicityInhibitOut,
 		debug_out => open
 	);
+	trig_out(32+19) <= HelicityOutput;
 	trig_out(32+20) <= HelicityOutput;
 	trig_out(32+21) <= HelicityInhibitOut;
 	trig_out(32+22) <= DisableTriggerSignal;
