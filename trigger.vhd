@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13111174";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"13111375";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -131,13 +131,13 @@ architecture RTL of trigger is
 
 	------------------------------------------------------------------------------	
 
-	signal HelicityOutput, HelicityInhibitOut : std_logic;
+	signal HelicityOutput, HelicityOutput_Inverted, HelicityInhibitOut : std_logic;
 	signal HelicityInhibitOut_Register : std_logic;
 	signal HelicityInhibitOut_IntoTotalDeadtime : std_logic;
 	signal MAMIHelicityResponse : std_logic;
 	
 	signal AllORRawTriggers_IntDelayed_L0, AllORRawTriggers_IntDelayed_L1 : std_logic;
-	signal HelicityRegisterSaved, HelicityRegisterToBeSaved : std_logic_vector(2 downto 0);
+	signal HelicityRegisterSaved, HelicityRegisterToBeSaved : std_logic_vector(15 downto 0);
 	
 	COMPONENT HelicityBitGenerator
 	PORT(
@@ -762,9 +762,10 @@ begin
 	trig_out(32+21) <= HelicityInhibitOut;
 	trig_out(32+22) <= DisableTriggerSignal;
 	DebugSignals(73 downto 70) <= clock0_5 & MAMIHelicityResponse & HelicityInhibitOut & HelicityOutput;
+	HelicityOutput_Inverted <= not HelicityOutput;
 	HelicityInhibitOut_IntoTotalDeadtime <= HelicityInhibitOut when HelicityInhibitOut_Register = '1' else '0';
 	
-	HelicityRegisterToBeSaved <= MAMIHelicityResponse & HelicityInhibitOut & HelicityOutput;
+	HelicityRegisterToBeSaved <= x"a20" & HelicityOutput_Inverted & MAMIHelicityResponse & HelicityInhibitOut & HelicityOutput;
 	process (clock200)
 	begin
 		if rising_edge(clock200) then
@@ -957,7 +958,7 @@ begin
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_DisableTriggerSignal) then 			u_data_o(0) <= DisableTriggerSignal; end if;
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_ExpTrigger_Delayed_Local) then 		u_data_o(0) <= ExpTrigger_Delayed_Local; end if;
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_HelicityInhibitOut_Register) then 	u_data_o(0) <= HelicityInhibitOut_Register; end if;
-			if (u_ad_reg(11 downto 4) =  BASE_TRIG_HelicityRegisterSaved) then 			u_data_o(2 downto 0) <= HelicityRegisterSaved; end if;
+			if (u_ad_reg(11 downto 4) =  BASE_TRIG_HelicityRegisterSaved) then 			u_data_o(15 downto 0) <= HelicityRegisterSaved; end if;
 			--CPU Interrupt Signals Delays / FastClear
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_CPUInterruptSignalsDelayTime_0) then 	u_data_o(15 downto 0) <= CPUInterruptSignalsDelayTime(16*0+15 downto 16*0); end if;
 			if (u_ad_reg(11 downto 4) =  BASE_TRIG_CPUInterruptSignalsDelayTime_1) then 	u_data_o(15 downto 0) <= CPUInterruptSignalsDelayTime(16*1+15 downto 16*1); end if;
