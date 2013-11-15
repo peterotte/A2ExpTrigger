@@ -260,20 +260,8 @@ begin
 	TriggerSignal_Inv <= not Inter_TriggerSignal;
 
 	--Accept und Reject Signal
-	StoreAcceptSignal: SingleBitStorage PORT MAP(
-		Data => Inter_TriggerSignal, 
-		Clock => AllORRawTriggers_Stored_ExtDelayed, 
-		Clear => MasterReset, 
-		Output => AcceptSignal,
-		CE => '1'
-   );
-	StoreRejectSignal: SingleBitStorage PORT MAP(
-		Data => TriggerSignal_Inv, 
-		Clock => AllORRawTriggers_Stored_ExtDelayed, 
-		Clear => MasterReset, 
-		Output => RejectSignal,
-		CE => '1'
-   );
+	AcceptSignal <= AllORRawTriggers_Stored_ExtDelayed and Inter_TriggerSignal;
+	RejectSignal <= AllORRawTriggers_Stored_ExtDelayed and TriggerSignal_Inv;
 	
 	--Busy Signal
 	Busy <= Inter_AllORRawTriggers_IntDelayed or Inter_AllORRawTriggers_Stored or AllORRawTriggers_Stored_ExtDelayed;
