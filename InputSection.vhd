@@ -37,7 +37,7 @@ begin
 	--PreScaler with Gate generator
 	Inst_Prescalers: for i in 0 to NRawL1Inputs-1 generate
    begin
-		Inst_Prescaler : PreScaler GENERIC MAP (NChLength => 5) 
+		Inst_Prescaler : PreScaler GENERIC MAP (NChLength => 19) --5 => 5*5ns + 0..5ns = 30ns 
 			Port MAP ( 
 				Sig_In => RawL1Triggers(i),
 				Sig_Out => RawL1Triggers_AfterPreScaler(i), 
