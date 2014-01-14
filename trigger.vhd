@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"01000079";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"0100007b";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -478,7 +478,7 @@ begin
 
 	----------------------------------------------------------------------------------------------
 	-- Oszi
-	DebugSignals(479 downto 256) <= EventID_OutputPin& b"100" & x"0000000"&trig_in(191 downto 0);
+	DebugSignals(479 downto 256) <= EventID_OutputPin& b"10" & TAPSLED1OR & x"0000000"&trig_in(191 downto 0);
 	DebugSignals(255 downto 247) <= Oszi_Debug_Out&Debug_ActualState;
 	
 	Inst_OsziCh: OsziCh PORT MAP(
@@ -646,7 +646,8 @@ begin
 		 Port map ( CLK => clock200, SIG_IN => CBHighESum, DELAY_OUT => CBHighESum_Delayed );
 	
 	CoplanarityL2 <= trig_in(32+1)&trig_in(32+0); --IN2, ch1,0
-	Multiplicity0123Many <= trig_in(23+32*3)&trig_in(18+32*3)&trig_in(17+32*3)&trig_in(16+32*3)&trig_in(15+32*3); --INOUT1, ch 23,18,17,16,15
+--	Multiplicity0123Many <= trig_in(23+32*3)&trig_in(18+32*3)&trig_in(17+32*3)&trig_in(16+32*3)&trig_in(15+32*3); --INOUT1, ch 23,18,17,16,15
+	Multiplicity0123Many <= trig_in(23+32*3)&trig_in(18+32*3)&trig_in(17+32*3)&Debug_ActualState(1 downto 0); --INOUT1, ch 23,18,17
 	
 	RawL2Triggers <= CBHighESum_Delayed&CoplanarityL2& Multiplicity0123Many & ConditionsOutL1; 	--IN1
 	--RawL2Triggers <= trig_in(32+7 downto 32) & ConditionsOutL1; --For debugging the co planarity trigger
@@ -786,7 +787,8 @@ begin
 	trig_out(1) <= L1Trigger_Gated;
 	trig_out(2) <= ExperimentTrigger; --for TCS
 	trig_out(3) <= L1Trigger2_Gated;
-	trig_out(10 downto 4) <= (10 downto 4 => '0');
+	trig_out(4) <= L2Trigger;
+	trig_out(10 downto 5) <= (10 downto 5 => '0');
 	trig_out(11) <= ExperimentTrigger; --for TAPS
 	trig_out(12) <= L1Trigger;
 	trig_out(13) <= MasterReset;
