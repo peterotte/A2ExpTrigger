@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"0100007c";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"0100007d";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -788,7 +788,8 @@ begin
 	trig_out(2) <= ExperimentTrigger; --for TCS
 	trig_out(3) <= L1Trigger2_Gated;
 	trig_out(4) <= L2_AllORRawTriggers_IntDelayed; --Signal to CBSlave Modules to save Hit Pattern
-	trig_out(10 downto 5) <= (10 downto 5 => '0');
+	trig_out(5) <= TotalDeadTime_Signal;
+	trig_out(10 downto 6) <= (others => '0'); -- free / unused
 	trig_out(11) <= ExperimentTrigger; --for TAPS
 	trig_out(12) <= L1Trigger;
 	trig_out(13) <= MasterReset;
