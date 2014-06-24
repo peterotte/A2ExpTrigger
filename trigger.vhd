@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"0100007d";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"0100007e";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -185,7 +185,7 @@ architecture RTL of trigger is
 	attribute keep of PreL1Trigger_Stored_ExtDelayed: signal is "TRUE";
 	attribute keep of PreL1Trigger_Stored: signal is "TRUE";
 	signal L1Trigger, L1Trigger_Gated, L1Trigger2_Gated : std_logic;
-	signal WidthL1Trigger_Gated, WidthL1Trigger2_Gated : std_logic_vector(15 downto 0) := x"0001";
+	signal WidthL1Trigger_Gated, WidthL1Trigger2_Gated : std_logic_vector(15 downto 0) := x"0002";
 	signal ImmediateReset : std_logic;
 	signal ConditionsOutL1 : STD_LOGIC_VECTOR (NConditions-1 downto 0);
 	signal L1_PreScalerFactor : STD_LOGIC_VECTOR (NConditions*16-1 downto 0) := (others => '1');
@@ -251,7 +251,10 @@ architecture RTL of trigger is
 
 	--L1 Trigger Signal to PID
 	signal L1Trigger_Gated_Reset : std_logic;
-	component PreciseGateByCounterVariable
+	component GateGenerator
+		generic (
+			SYNC_LEADING_EDGE : integer range 0 to 1 := 0
+			);
     Port ( Input : in  STD_LOGIC;
            Output : out  STD_LOGIC; -- 20ns deadtime after pulse
 			  DeadOut : out  STD_LOGIC; --during reset (20ns) is this signal = '1'
@@ -616,7 +619,10 @@ begin
 	
 	-- Gate of L1 Trigger Signal to PID QDC
 	L1Trigger_Gated_Reset <= trig_in(28) or MasterReset;
-	GateGen_L1Trigger_Gated: PreciseGateByCounterVariable
+	GateGen_L1Trigger_Gated: GateGenerator
+		generic map (
+			SYNC_LEADING_EDGE => 1
+			)
 		Port MAP ( Input => L1Trigger,
 			Output => L1Trigger_Gated,
 			DeadOut => open,
@@ -626,7 +632,10 @@ begin
          clock => clock200);
 	DebugSignals(63) <= L1Trigger_Gated;
 	-- Gate of L1 Trigger Signal to Ref TDC
-	GateGen_L1Trigger2_Gated: PreciseGateByCounterVariable
+	GateGen_L1Trigger2_Gated: GateGenerator
+		generic map (
+			SYNC_LEADING_EDGE => 0
+			)
 		Port MAP ( Input => L1Trigger,
 			Output => L1Trigger2_Gated,
 			DeadOut => open,
