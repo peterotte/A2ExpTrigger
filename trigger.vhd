@@ -41,7 +41,7 @@ architecture RTL of trigger is
 
 	subtype sub_Address is std_logic_vector(11 downto 4);
 	constant BASE_TRIG_FIXED : sub_Address 							:= x"f0" ; -- r
-	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"0100007e";
+	constant TRIG_FIXED_Master : std_logic_vector(31 downto 0)  := x"0100007f";
 
 	--Pre L1
 	constant BASE_TRIG_PreTriggerMask : sub_Address								:= x"15"; --r/w
@@ -651,7 +651,7 @@ begin
 	-- MainSection: TLS L2
 	--
 	CBHighESum <= trig_in(12); --L2, Ch7
-	HighESumDelay: delay_by_shiftregister Generic map ( DELAY => 20)
+	HighESumDelay: delay_by_shiftregister Generic map ( DELAY => 14) --was: 20 = 200ns until 24.3.2015. This is not sufficient for high energy thersholds
 		 Port map ( CLK => clock200, SIG_IN => CBHighESum, DELAY_OUT => CBHighESum_Delayed );
 	
 	CoplanarityL2 <= trig_in(32+1)&trig_in(32+0); --IN2, ch1,0
